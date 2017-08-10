@@ -8,8 +8,8 @@ import signal
 from os import path
 from Crypto.Cipher import AES
 
-class Server(BaseHTTPRequestHandler):
 
+class Server(BaseHTTPRequestHandler):
     def _set_headers(self):
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
@@ -23,20 +23,19 @@ class Server(BaseHTTPRequestHandler):
         self._set_headers()
 
         if 'learnCommand' in self.path:
-            commandName = self.path.split('/')[2] 
+            commandName = self.path.split('/')[2]
             result = learnCommand(commandName)
             if result == False:
                 self.wfile.write("Failed: No command learned")
             else:
                 self.wfile.write("Learned: %s" % commandName)
 
-        
         elif 'sendCommand' in self.path:
             commandName = self.path.split('/')[2]
             if 'on' in commandName or 'off' in commandName:
                 status = commandName.rsplit('o', 1)[1]
                 realcommandName = commandName.rsplit('o', 1)[0]
-                print(status,realcommandName)
+                print(status, realcommandName)
                 if 'n' in status:
                     setStatus(realcommandName, '1', True)
                 elif 'ff' in status:
@@ -46,9 +45,6 @@ class Server(BaseHTTPRequestHandler):
                 self.wfile.write("Failed: Unknonwn command")
             else:
                 self.wfile.write("Sent: %s" % commandName)
-                
-
-
 
         elif 'getStatus' in self.path:
             commandName = self.path.split('/')[2]
@@ -64,31 +60,23 @@ class Server(BaseHTTPRequestHandler):
                     self.wfile.write(status)
                 else:
                     self.wfile.write("Failed: Unknown command")
-        
+
         elif 'setStatus' in self.path:
             commandName = self.path.split('/')[2]
             status = self.path.split('/')[3]
             result = setStatus(commandName, status)
-            print('Setting status %s of %s' % (commandName,status))
+            print('Setting status %s of %s' % (commandName, status))
             if (result):
                 self.wfile.write("Set status of %s to %s" % (commandName, status))
             else:
                 self.wfile.write("Failed: Unknown command")
 
-        elif 'a1'  in self.path:
-            sensor = self.path.split('/')[2]
-            result = getA1Sensor(sensor)
-            if result == False:
-                self.wfile.write("Failed getting A1 data")
-            else:
-                if sensor == 'temperature' or sensor == 'humidity':
-                    self.wfile.write('''{ "%s": %s }''' % (sensor, result))
-                else:
-                    self.wfile.write('''{ "%s": "%s" }''' % (sensor, result))
         else:
             self.wfile.write("Failed")
 
+
 serverPort = ''
+
 
 def sendCommand(commandName):
     device = broadlink.rm((RMIPAddress, RMPort), RMMACAddress)
@@ -107,16 +95,17 @@ def sendCommand(commandName):
         decodedCommand = binascii.unhexlify(commandFromSettings)
         AESEncryption = AES.new(str(deviceKey), AES.MODE_CBC, str(deviceIV))
         encodedCommand = AESEncryption.encrypt(str(decodedCommand))
-        
-        finalCommand = encodedCommand[0x04:]    
-        
+
+        finalCommand = encodedCommand[0x04:]
+
         signal.signal(signal.SIGALRM, signal_handler)
-        signal.alarm(4)   # Ten seconds
+        signal.alarm(4)  # Ten seconds
         try:
             device.send_data(finalCommand)
         except Exception, msg:
             print "Probably timed out.."
             return True
+
 
 def learnCommand(commandName):
     device = broadlink.rm((RMIPAddress, RMPort), RMMACAddress)
@@ -133,21 +122,22 @@ def learnCommand(commandName):
         print('Command not received')
         return False
 
-    AdditionalData = bytearray([0x00, 0x00, 0x00, 0x00])    
+    AdditionalData = bytearray([0x00, 0x00, 0x00, 0x00])
     finalCommand = AdditionalData + LearnedCommand
 
     AESEncryption = AES.new(str(deviceKey), AES.MODE_CBC, str(deviceIV))
     decodedCommand = binascii.hexlify(AESEncryption.decrypt(str(finalCommand)))
 
-    broadlinkControlIniFile = open(path.join(settings.applicationDir, 'settings.ini'), 'w')    
+    broadlinkControlIniFile = open(path.join(settings.applicationDir, 'settings.ini'), 'w')
     settingsFile.set('Commands', commandName, decodedCommand)
     settingsFile.write(broadlinkControlIniFile)
     broadlinkControlIniFile.close()
     return True
 
-def setStatus(commandName, status, exist = False):
+
+def setStatus(commandName, status, exist=False):
     if exist:
-        broadlinkControlIniFile = open(path.join(settings.applicationDir, 'settings.ini'), 'w')    
+        broadlinkControlIniFile = open(path.join(settings.applicationDir, 'settings.ini'), 'w')
         settingsFile.set('Status', commandName, status)
         settingsFile.write(broadlinkControlIniFile)
         broadlinkControlIniFile.close()
@@ -158,13 +148,14 @@ def setStatus(commandName, status, exist = False):
     else:
         return False
     if commandFromSettings.strip() != '':
-        broadlinkControlIniFile = open(path.join(settings.applicationDir, 'settings.ini'), 'w')    
+        broadlinkControlIniFile = open(path.join(settings.applicationDir, 'settings.ini'), 'w')
         settingsFile.set('Status', commandName, status)
         settingsFile.write(broadlinkControlIniFile)
         broadlinkControlIniFile.close()
         return True
     else:
         return False
+
 
 def getStatus(commandName):
     if settingsFile.has_option('Status', commandName):
@@ -173,24 +164,26 @@ def getStatus(commandName):
     else:
         return False
 
+
 def getTempRM():
     device = broadlink.rm((RMIPAddress, RMPort), RMMACAddress)
     device.auth()
     temperature = device.check_temperature()
     if temperature:
         return temperature
-    return False 
+    return False
+
 
 def signal_handler(signum, frame):
     print ("HTTP timeout, but the command should be already sent.")
-        
+
+
 def start(server_class=HTTPServer, handler_class=Server, port=serverPort):
-
-
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     print 'Starting broadlink-rest server on port %s ...' % port
     httpd.serve_forever()
+
 
 if __name__ == "__main__":
 
@@ -222,13 +215,11 @@ if __name__ == "__main__":
         print('Timeout must exist in settings.ini or it should be entered as a command line parameter')
         sys.exit(2)
     else:
-        RealTimeout = int(RealTimeout.strip())    
-
+        RealTimeout = int(RealTimeout.strip())
 
     if settingsFile.has_option('General', 'serverPort'):
         serverPort = int(settingsFile.get('General', 'serverPort'))
     else:
         serverPort = 8080
-
 
     start(port=serverPort)
