@@ -181,14 +181,6 @@ def getTempRM():
         return temperature
     return False 
 
-def getA1Sensor(sensor):
-    device = broadlink.a1((A1IPAddress, A1Port), A1MACAddress)
-    device.auth()
-    result = device.check_sensors()
-    if result:
-        return result[sensor]
-    return False 
-
 def signal_handler(signum, frame):
     print ("HTTP timeout, but the command should be already sent.")
         
@@ -224,25 +216,6 @@ if __name__ == "__main__":
         sys.exit(2)
     else:
         RMMACAddress = netaddr.EUI(RMMACAddress)
-
-    A1IPAddress = settings.A1IPAddress
-    if A1IPAddress.strip() == '':
-        print('IP address must exist in settings.ini or it should be entered as a command line parameter')
-        sys.exit(2)
-
-    A1Port = settings.A1Port
-    if A1Port.strip() == '':
-        print('Port must exist in settings.ini or it should be entered as a command line parameter')
-        sys.exit(2)
-    else:
-        A1Port = int(A1Port.strip())
-
-    A1MACAddress = settings.A1MACAddress
-    if A1MACAddress.strip() == '':
-        print('MAC address must exist in settings.ini or it should be entered as a command line parameter')
-        sys.exit(2)
-    else:
-        A1MACAddress = netaddr.EUI(A1MACAddress)
 
     RealTimeout = settings.Timeout
     if RealTimeout.strip() == '':
